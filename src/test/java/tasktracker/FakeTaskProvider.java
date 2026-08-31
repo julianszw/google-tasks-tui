@@ -30,6 +30,11 @@ public class FakeTaskProvider implements TaskProvider {
     }
 
     @Override
+    public void deleteTaskList(String listId) {
+        lists.remove(listId);
+    }
+
+    @Override
     public List<Task> listTasks(String listId) {
         return tasks.values().stream()
                 .filter(task -> listId.equals(task.getListId()))

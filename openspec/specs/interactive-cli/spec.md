@@ -113,6 +113,23 @@ La tecla `d` DEBE eliminar la tarea seleccionada.
 - **THEN** la tarea se elimina
 - **AND** la vista se actualiza sin mostrar la tarea eliminada
 
+### Requirement: Editar tarea seleccionada con atajo
+La tecla `e` DEBE abrir el campo de edición del título para la tarea seleccionada,
+sin necesidad de abrir el menú de acciones.
+
+#### Scenario: Editar con e
+- **GIVEN** una tarea seleccionada
+- **WHEN** el usuario presiona `e`
+- **THEN** se abre un campo de entrada precargado con el título actual (según `task-action-menu`)
+- **AND** al confirmar un título no vacío, el título de la tarea se actualiza según `task-management`
+- **AND** la vista se redibuja mostrando el nuevo título
+
+#### Scenario: e sin tareas
+- **GIVEN** que no hay tareas en la lista
+- **WHEN** el usuario presiona `e`
+- **THEN** no se abre ningún campo de edición
+- **AND** no se produce ningún error
+
 ### Requirement: Purgar tareas completadas
 La tecla `p` DEBE eliminar todas las tareas en estado `COMPLETED` de la lista activa.
 
@@ -127,6 +144,38 @@ La tecla `p` DEBE eliminar todas las tareas en estado `COMPLETED` de la lista ac
 - **WHEN** el usuario presiona `p`
 - **THEN** no se elimina ninguna tarea
 - **AND** se muestra un mensaje indicando que no hay tareas completadas
+
+### Requirement: Eliminar listas vacías con confirmación
+La tecla `x` DEBE solicitar confirmación antes de eliminar las listas vacías.
+
+#### Scenario: Solicitar confirmación
+- **GIVEN** la vista visible
+- **WHEN** el usuario presiona `x`
+- **THEN** se muestra un diálogo de confirmación ("¿estás seguro?") con las opciones sí/no
+- **AND** no se elimina ninguna lista aún
+
+#### Scenario: Selección por defecto
+- **GIVEN** el diálogo de confirmación abierto
+- **WHEN** se muestra el diálogo
+- **THEN** la opción "no" está seleccionada por defecto
+
+#### Scenario: Confirmar
+- **GIVEN** el diálogo de confirmación abierto con la opción "sí" seleccionada
+- **WHEN** el usuario confirma con `Enter`
+- **THEN** se eliminan las listas vacías según `task-lists`
+- **AND** la vista se redibuja reflejando el resultado
+
+#### Scenario: Cancelar con "no"
+- **GIVEN** el diálogo de confirmación abierto con la opción "no" seleccionada
+- **WHEN** el usuario confirma con `Enter`
+- **THEN** el diálogo se cierra sin eliminar ninguna lista
+- **AND** la aplicación permanece abierta
+
+#### Scenario: Cancelar con Esc
+- **GIVEN** el diálogo de confirmación abierto
+- **WHEN** el usuario presiona `Esc`
+- **THEN** el diálogo se cierra sin eliminar ninguna lista
+- **AND** la aplicación permanece abierta
 
 ### Requirement: Crear tarea desde la vista
 La tecla `a` DEBE abrir un campo de entrada para crear una tarea.
@@ -156,7 +205,7 @@ El sistema DEBE mostrar siempre una ayuda visible con las teclas disponibles, en
 #### Scenario: Ayuda siempre visible
 - **GIVEN** la vista única visible
 - **WHEN** se muestra la vista
-- **THEN** se muestra la fila de atajos con las teclas disponibles: `↑`/`k` (subir), `↓`/`j` (bajar), `Enter` (acciones), `Tab` (lista), `a` (crear), `n` (nueva lista), `h` (ocultar listas), `c` (completar), `r` (reabrir), `d` (eliminar), `p` (purgar), `q`/`Esc` (salir)
+- **THEN** se muestra la fila de atajos con las teclas disponibles: `↑`/`k` (subir), `↓`/`j` (bajar), `Enter` (acciones), `Tab` (lista), `a` (crear), `e` (editar), `n` (nueva lista), `s` (ajustes), `x` (eliminar listas vacías), `c` (completar), `r` (reabrir), `d` (eliminar), `p` (purgar), `q`/`Esc` (salir)
 - **AND** la ayuda permanece visible en todo momento, sin necesidad de presionar una tecla para mostrarla
 
 ### Requirement: Salir de la aplicación con confirmación

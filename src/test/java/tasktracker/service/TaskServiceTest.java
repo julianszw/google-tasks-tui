@@ -58,6 +58,38 @@ class TaskServiceTest {
     }
 
     @Test
+    void deleteEmptyListsRemovesOnlyEmptyLists() {
+        service.createList("Inbox");
+        String work = service.createList("Trabajo").getId();
+        service.addTask(work, "A");
+
+        List<TaskList> removed = service.deleteEmptyLists();
+
+        assertEquals(1, removed.size());
+        assertEquals("Inbox", removed.get(0).getTitle());
+        assertEquals(List.of(work), service.listLists().stream().map(TaskList::getId).toList());
+    }
+
+    @Test
+    void deleteEmptyListsReturnsEmptyWhenNoEmptyLists() {
+        String inbox = service.createList("Inbox").getId();
+        service.addTask(inbox, "A");
+
+        assertTrue(service.deleteEmptyLists().isEmpty());
+        assertEquals(1, service.listLists().size());
+    }
+
+    @Test
+    void deleteEmptyListsCanLeaveZeroLists() {
+        service.createList("Inbox");
+
+        List<TaskList> removed = service.deleteEmptyLists();
+
+        assertEquals(1, removed.size());
+        assertTrue(service.listLists().isEmpty());
+    }
+
+    @Test
     void listListsReturnsEmptyWhenNoLists() {
         assertTrue(service.listLists().isEmpty());
     }

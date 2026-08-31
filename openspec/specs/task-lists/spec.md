@@ -115,3 +115,30 @@ La tecla `Esc` DEBE cancelar la creación de una lista sin crear nada.
 - **WHEN** el usuario presiona `Esc`
 - **THEN** no se crea ninguna lista
 - **AND** la vista vuelve a la lista activa sin cambios
+
+### Requirement: Eliminar listas vacías
+El sistema DEBE permitir eliminar todas las listas que no tienen tareas.
+
+#### Scenario: Eliminar listas vacías
+- **GIVEN** una o más listas sin tareas
+- **WHEN** se solicita eliminar las listas vacías
+- **THEN** se eliminan todas las listas que no tienen tareas
+- **AND** las listas con tareas permanecen intactas
+
+#### Scenario: Sin listas vacías
+- **GIVEN** que todas las listas tienen al menos una tarea
+- **WHEN** se solicita eliminar las listas vacías
+- **THEN** no se elimina ninguna lista
+- **AND** se muestra un mensaje indicando que no hay listas vacías
+
+#### Scenario: Quedar sin listas
+- **GIVEN** todas las listas están vacías
+- **WHEN** se solicita eliminar las listas vacías
+- **THEN** se eliminan todas las listas
+- **AND** la aplicación permite quedar sin listas, mostrando una vista vacía
+
+#### Scenario: Vista sin listas
+- **GIVEN** que no quedan listas
+- **WHEN** se muestra la vista
+- **THEN** la vista se muestra sin listas ni tareas
+- **AND** el usuario puede crear una lista nueva (según esta capacidad)

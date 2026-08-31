@@ -11,9 +11,12 @@ import com.googlecode.lanterna.input.KeyType;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import tasktracker.model.Settings;
 import tasktracker.model.Task;
 import tasktracker.model.TaskList;
+import tasktracker.provider.AccountProvider;
 import tasktracker.provider.ProviderException;
+import tasktracker.service.SettingsStore;
 import tasktracker.service.TaskService;
 
 public class TaskListWindow extends BasicWindow {
@@ -22,6 +25,7 @@ public class TaskListWindow extends BasicWindow {
     private static final String NO_TASKS = "No hay tareas cargadas";
     private static final String NO_COMPLETED_TO_PURGE = "No hay tareas completadas para eliminar";
     private static final String NO_OTHER_LIST = "No hay otra lista a la que mover la tarea";
+    private static final String NO_EMPTY_LISTS = "No hay listas vacías";
 
     private final TaskService service;
     private final WindowBasedTextGUI gui;
@@ -32,16 +36,31 @@ public class TaskListWindow extends BasicWindow {
     private int selected;
     private String status = "";
     private MessageKind kind = MessageKind.INFO;
-    private boolean hideEmptyLists = false;
+    private final Settings settings;
+    private final SettingsStore settingsStore;
+    private final AccountProvider account;
 
     public TaskListWindow(TaskService service) {
-        this(service, null);
+        this(service, null, new Settings(), null, null);
     }
 
     public TaskListWindow(TaskService service, WindowBasedTextGUI gui) {
+        this(service, gui, new Settings(), null, null);
+    }
+
+    public TaskListWindow(TaskService service, WindowBasedTextGUI gui, Settings settings,
+            SettingsStore settingsStore) {
+        this(service, gui, settings, settingsStore, null);
+    }
+
+    public TaskListWindow(TaskService service, WindowBasedTextGUI gui, Settings settings,
+            SettingsStore settingsStore, AccountProvider account) {
         super(TITLE);
         this.service = service;
         this.gui = gui;
+        this.settings = settings;
+        this.settingsStore = settingsStore;
+        this.account = account;
         lists.addAll(service.listLists());
 
         setHints(List.of(Window.Hint.FULL_SCREEN));
@@ -91,7 +110,12 @@ public class TaskListWindow extends BasicWindow {
     private void refresh() {
         tasks.clear();
         if (!lists.isEmpty()) {
-            tasks.addAll(service.listTasks(activeList().getId()));
+            List<Task> all = service.listTasks(activeList().getId());
+            if (settings.isHideCompletedTasks()) {
+                tasks.addAll(all.stream().filter(task -> !task.isCompleted()).toList());
+            } else {
+                tasks.addAll(all);
+            }
         }
         if (selected >= tasks.size()) {
             selected = Math.max(0, tasks.size() - 1);
@@ -187,11 +211,6 @@ public class TaskListWindow extends BasicWindow {
             return false;
         }
         return switch (c) {
-            case 'h' -> {
-                hideEmptyLists = !hideEmptyLists;
-                refresh();
-                yield true;
-            }
             case 'k' -> {
                 moveUp();
                 yield true;
@@ -204,8 +223,16 @@ public class TaskListWindow extends BasicWindow {
                 openAddTask();
                 yield true;
             }
+            case 'e' -> {
+                openEditTask();
+                yield true;
+            }
             case 'n' -> {
                 openNewList();
+                yield true;
+            }
+            case 's' -> {
+                openSettings();
                 yield true;
             }
             case 'c' -> {
@@ -222,6 +249,10 @@ public class TaskListWindow extends BasicWindow {
             }
             case 'p' -> {
                 purgeCompleted();
+                yield true;
+            }
+            case 'x' -> {
+                openDeleteEmptyLists();
                 yield true;
             }
             case 'q' -> {
@@ -266,7 +297,7 @@ public class TaskListWindow extends BasicWindow {
             int startIndex = activeIndex;
             do {
                 activeIndex = (activeIndex + 1) % lists.size();
-                if (!hideEmptyLists || !service.listTasks(activeList().getId()).isEmpty()) {
+                if (!settings.isHideEmptyLists() || !service.listTasks(activeList().getId()).isEmpty()) {
                     break;
                 }
             } while (activeIndex != startIndex);
@@ -280,7 +311,7 @@ public class TaskListWindow extends BasicWindow {
             int startIndex = activeIndex;
             do {
                 activeIndex = (activeIndex - 1 + lists.size()) % lists.size();
-                if (!hideEmptyLists || !service.listTasks(activeList().getId()).isEmpty()) {
+                if (!settings.isHideEmptyLists() || !service.listTasks(activeList().getId()).isEmpty()) {
                     break;
                 }
             } while (activeIndex != startIndex);
@@ -309,6 +340,45 @@ public class TaskListWindow extends BasicWindow {
             activeIndex = lists.size() - 1;
             selected = 0;
             refresh();
+        }
+    }
+
+    private void openSettings() {
+        if (gui == null || settingsStore == null) {
+            return;
+        }
+        SettingsWindow window = new SettingsWindow(settings, settingsStore, account);
+        gui.addWindowAndWait(window);
+        if (window.isAccountChanged()) {
+            close();
+            return;
+        }
+        refresh();
+    }
+
+    private void openDeleteEmptyLists() {
+        if (gui == null || lists.isEmpty()) {
+            return;
+        }
+        OptionMenuWindow confirm = new OptionMenuWindow("¿Estás seguro?", List.of("Sí", "No"), 1);
+        gui.addWindowAndWait(confirm);
+        if (confirm.selectedIndex() != 0) {
+            return;
+        }
+        try {
+            List<TaskList> removed = service.deleteEmptyLists();
+            lists.clear();
+            lists.addAll(service.listLists());
+            activeIndex = Math.max(0, lists.size() - 1);
+            selected = 0;
+            refresh();
+            if (removed.isEmpty()) {
+                setStatus(NO_EMPTY_LISTS);
+            } else {
+                setStatus("Listas vacías eliminadas: " + removed.size());
+            }
+        } catch (ProviderException e) {
+            setWarning(e.getMessage());
         }
     }
 

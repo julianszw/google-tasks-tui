@@ -51,6 +51,17 @@ public class TaskService {
         return created;
     }
 
+    public List<TaskList> deleteEmptyLists() {
+        List<TaskList> empty = lists.values().stream()
+                .filter(list -> listTasks(list.getId()).isEmpty())
+                .toList();
+        for (TaskList list : empty) {
+            provider.deleteTaskList(list.getId());
+            lists.remove(list.getId());
+        }
+        return empty;
+    }
+
     public Task addTask(String listId, String title) {
         return addTask(listId, title, null);
     }

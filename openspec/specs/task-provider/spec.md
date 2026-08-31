@@ -30,9 +30,9 @@ persistencia local en archivo JSON y el repositorio en memoria persistente.
 El sistema DEBE definir una abstracción de proveedor con las operaciones que la
 aplicación usa, de modo que Google Tasks sea una implementación reemplazable por
 otros proveedores (por ejemplo, Microsoft TO DO) sin cambiar el resto de la
-aplicación: listar listas, crear lista, listar tareas, crear tarea, actualizar
-tarea, eliminar tarea, mover tarea y exponer el nombre del proveedor. La abstracción
-NO DEBE incluir operaciones que la aplicación no usa (obtener, renombrar o eliminar
+aplicación: listar listas, crear lista, eliminar lista, listar tareas, crear tarea,
+actualizar tarea, eliminar tarea, mover tarea y exponer el nombre del proveedor. La
+abstracción NO DEBE incluir operaciones que la aplicación no usa (obtener o renombrar
 listas; obtener una tarea individual; limpiar una lista).
 
 #### Scenario: Proveedor intercambiable
@@ -99,8 +99,23 @@ a pedir autenticación en cada ejecución.
 - **WHEN** se intenta una operación
 - **THEN** el sistema solicita autenticación nuevamente
 
+### Requirement: Email de la cuenta autenticada
+El sistema DEBE exponer el email de la cuenta de Google autenticada, para mostrarlo
+en la sección de Settings (según `settings`).
+
+#### Scenario: Cuenta autenticada
+- **GIVEN** un usuario autenticado con Google
+- **WHEN** se consulta la cuenta configurada
+- **THEN** el sistema expone el email de la cuenta
+
+#### Scenario: Sin cuenta autenticada
+- **GIVEN** que no hay una cuenta autenticada
+- **WHEN** se consulta la cuenta configurada
+- **THEN** el sistema indica que no hay cuenta configurada
+
 ### Requirement: Operaciones sobre listas de tareas
-El sistema DEBE soportar, sobre las listas de tareas (tasklists), listar y crear.
+El sistema DEBE soportar, sobre las listas de tareas (tasklists), listar, crear y
+eliminar.
 
 #### Scenario: Listar listas
 - **GIVEN** el usuario autenticado
@@ -118,6 +133,12 @@ El sistema DEBE soportar, sobre las listas de tareas (tasklists), listar y crear
 - **WHEN** se solicita crear la lista
 - **THEN** la lista se crea en Google Tasks
 - **AND** el sistema devuelve la lista con el id asignado por Google
+
+#### Scenario: Eliminar lista
+- **GIVEN** el id de una lista existente
+- **WHEN** se solicita eliminar la lista
+- **THEN** la lista se elimina en Google Tasks
+- **AND** deja de estar disponible para ser listada
 
 ### Requirement: Operaciones sobre tareas
 El sistema DEBE soportar, sobre las tareas de una lista, listar, crear, actualizar,

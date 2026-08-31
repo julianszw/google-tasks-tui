@@ -12,7 +12,9 @@ import tasktracker.cli.LanternaTaskTrackerView;
 import tasktracker.cli.VisualStyle;
 import tasktracker.google.GoogleAuth;
 import tasktracker.google.GoogleTasksProvider;
+import tasktracker.model.Settings;
 import tasktracker.provider.ProviderException;
+import tasktracker.service.SettingsStore;
 import tasktracker.service.TaskService;
 
 public class App {
@@ -26,7 +28,8 @@ public class App {
 
     private static int run() {
         try {
-            GoogleAuth auth = new GoogleAuth(Path.of("."));
+            Path workingDir = Path.of(".");
+            GoogleAuth auth = new GoogleAuth(workingDir);
             if (!auth.hasStoredCredentials()) {
                 auth.authorize();
             }
@@ -37,6 +40,9 @@ public class App {
                 service.createList("Inbox");
             }
 
+            SettingsStore settingsStore = new SettingsStore(workingDir);
+            Settings settings = settingsStore.load();
+
             Terminal terminal = new DefaultTerminalFactory().setTerminalEmulatorTitle("TaskMaster").createTerminal();
             Screen screen = new TerminalScreen(terminal);
             screen.startScreen();
@@ -44,7 +50,7 @@ public class App {
                 WindowBasedTextGUI gui = new MultiWindowTextGUI(screen);
                 gui.setTheme(VisualStyle.theme());
 
-                LanternaTaskTrackerView view = new LanternaTaskTrackerView(gui, service);
+                LanternaTaskTrackerView view = new LanternaTaskTrackerView(gui, service, settings, settingsStore, auth);
                 view.start();
             } finally {
                 screen.stopScreen();

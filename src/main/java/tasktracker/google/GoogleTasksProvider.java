@@ -68,6 +68,14 @@ public final class GoogleTasksProvider implements TaskProvider {
     }
 
     @Override
+    public void deleteTaskList(String listId) {
+        call("No se pudo eliminar la lista", () -> {
+            tasks.tasklists().delete(listId).execute();
+            return null;
+        });
+    }
+
+    @Override
     public List<Task> listTasks(String listId) {
         return call("No se pudieron listar las tareas", () -> {
             List<com.google.api.services.tasks.model.Task> all = new ArrayList<>();

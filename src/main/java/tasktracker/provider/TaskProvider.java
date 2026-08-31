@@ -11,6 +11,8 @@ public interface TaskProvider {
 
     TaskList createTaskList(String title);
 
+    void deleteTaskList(String listId);
+
     List<Task> listTasks(String listId);
 
     Task createTask(String listId, String title, LocalDate due);

@@ -8,6 +8,7 @@ import com.googlecode.lanterna.input.KeyType;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import tasktracker.FakeTaskProvider;
+import tasktracker.model.Settings;
 import tasktracker.model.Task;
 import tasktracker.model.TaskStatus;
 import tasktracker.service.TaskService;
@@ -263,22 +264,19 @@ class TaskListWindowTest {
         service.createList("Trabajo");
         String compras = service.createList("Compras").getId();
         service.addTask(compras, "A");
-        TaskListWindow window = new TaskListWindow(service);
+        TaskListWindow window = windowWithSettings(true, false);
 
-        window.handleInput(new KeyStroke('h', false, false));
         window.handleInput(new KeyStroke(KeyType.Tab));
 
         assertEquals(compras, window.activeListId());
     }
 
     @Test
-    void hideEmptyListsToggleOffRestoresNormalNavigation() {
+    void hideEmptyListsDisabledRestoresNormalNavigation() {
         service.createList("Inbox");
         service.createList("Trabajo");
-        TaskListWindow window = new TaskListWindow(service);
+        TaskListWindow window = windowWithSettings(false, false);
 
-        window.handleInput(new KeyStroke('h', false, false));
-        window.handleInput(new KeyStroke('h', false, false));
         window.handleInput(new KeyStroke(KeyType.Tab));
 
         assertEquals(1, window.activeListIndex());
@@ -289,12 +287,68 @@ class TaskListWindowTest {
         service.createList("Inbox");
         String work = service.createList("Trabajo").getId();
         service.addTask(work, "A");
-        TaskListWindow window = new TaskListWindow(service);
+        TaskListWindow window = windowWithSettings(true, false);
 
-        window.handleInput(new KeyStroke('h', false, false));
         window.handleInput(new KeyStroke(KeyType.Tab));
 
         assertEquals(work, window.activeListId());
+    }
+
+    @Test
+    void hideCompletedTasksFiltersCompletedFromView() {
+        String inbox = service.createList("Inbox").getId();
+        service.addTask(inbox, "Pendiente");
+        Task completed = service.addTask(inbox, "Completada");
+        service.completeTask(completed.getId());
+        TaskListWindow window = windowWithSettings(false, true);
+
+        assertEquals(1, window.taskCount());
+    }
+
+    @Test
+    void hideCompletedTasksDisabledShowsAll() {
+        String inbox = service.createList("Inbox").getId();
+        service.addTask(inbox, "Pendiente");
+        Task completed = service.addTask(inbox, "Completada");
+        service.completeTask(completed.getId());
+        TaskListWindow window = windowWithSettings(false, false);
+
+        assertEquals(2, window.taskCount());
+    }
+
+    @Test
+    void settingsKeyIsHandledWithoutGui() {
+        inbox();
+        TaskListWindow window = new TaskListWindow(service);
+
+        assertTrue(window.handleInput(new KeyStroke('s', false, false)));
+        assertEquals(1, service.listLists().size());
+    }
+
+    @Test
+    void editKeyIsHandledWithoutGui() {
+        inbox();
+        service.addTask(inboxId, "A");
+        TaskListWindow window = new TaskListWindow(service);
+
+        assertTrue(window.handleInput(new KeyStroke('e', false, false)));
+        assertEquals(1, service.listTasks(inboxId).size());
+    }
+
+    @Test
+    void deleteEmptyListsKeyIsHandledWithoutGui() {
+        inbox();
+        TaskListWindow window = new TaskListWindow(service);
+
+        assertTrue(window.handleInput(new KeyStroke('x', false, false)));
+        assertEquals(1, service.listLists().size());
+    }
+
+    private TaskListWindow windowWithSettings(boolean hideEmptyLists, boolean hideCompletedTasks) {
+        Settings settings = new Settings();
+        settings.setHideEmptyLists(hideEmptyLists);
+        settings.setHideCompletedTasks(hideCompletedTasks);
+        return new TaskListWindow(service, null, settings, null);
     }
 
     @Test
