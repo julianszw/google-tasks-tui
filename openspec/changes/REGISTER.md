@@ -46,3 +46,6 @@ _(ninguno)_
 | `030-add-task-list-field` | `c9b9190` | agregar campo de lista en nueva tarea |
 | `031-cyclic-menu-navigation` | `85a3df7` | navegación cíclica en menúes y calendario |
 | `032-code-review-hardening` | `34ac5c7` | aplicar hallazgos del code review (cacheo, paginación, dead code y docs) |
+| `033-settings-section` | `5eab56c` | agregar sección de ajustes con persistencia |
+| `034-edit-shortcut-and-delete-empty-lists` | `5eab56c` | agregar atajo editar y eliminar listas vacías |
+| `035-account-settings` | `5eab56c` | agregar cuenta de google en ajustes |
