@@ -49,3 +49,4 @@ _(ninguno)_
 | `033-settings-section` | `5eab56c` | agregar sección de ajustes con persistencia |
 | `034-edit-shortcut-and-delete-empty-lists` | `5eab56c` | agregar atajo editar y eliminar listas vacías |
 | `035-account-settings` | `5eab56c` | agregar cuenta de google en ajustes |
+| `037-fix-expired-oauth-token-reauth` | `74bb1f4` | re-autenticar automáticamente ante refresh token expirado/revocado (invalid_grant) |
