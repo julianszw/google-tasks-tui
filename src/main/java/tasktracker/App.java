@@ -14,6 +14,8 @@ import tasktracker.google.GoogleAuth;
 import tasktracker.google.GoogleTasksProvider;
 import tasktracker.model.Settings;
 import tasktracker.provider.ProviderException;
+import tasktracker.provider.ReauthenticatingTaskProvider;
+import tasktracker.provider.TaskProvider;
 import tasktracker.service.SettingsStore;
 import tasktracker.service.TaskService;
 
@@ -34,11 +36,7 @@ public class App {
                 auth.authorize();
             }
 
-            TaskService service = new TaskService(new GoogleTasksProvider(auth));
-            service.load();
-            if (service.listLists().isEmpty()) {
-                service.createList("Inbox");
-            }
+            TaskService service = loadTaskService(auth);
 
             SettingsStore settingsStore = new SettingsStore(workingDir);
             Settings settings = settingsStore.load();
@@ -63,5 +61,15 @@ public class App {
             System.err.println("Error de terminal: " + e.getMessage());
             return 1;
         }
+    }
+
+    private static TaskService loadTaskService(GoogleAuth auth) {
+        TaskProvider provider = new ReauthenticatingTaskProvider(auth, () -> new GoogleTasksProvider(auth));
+        TaskService service = new TaskService(provider);
+        service.load();
+        if (service.listLists().isEmpty()) {
+            service.createList("Inbox");
+        }
+        return service;
     }
 }

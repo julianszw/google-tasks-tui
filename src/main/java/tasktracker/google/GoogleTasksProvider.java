@@ -1,6 +1,9 @@
 package tasktracker.google;
 
+import com.google.api.client.auth.oauth2.TokenErrorResponse;
+import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.tasks.Tasks;
@@ -13,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import tasktracker.model.Task;
 import tasktracker.model.TaskList;
+import tasktracker.provider.AuthenticationExpiredException;
 import tasktracker.provider.ProviderException;
 import tasktracker.provider.TaskProvider;
 
@@ -141,7 +145,7 @@ public final class GoogleTasksProvider implements TaskProvider {
         try {
             return operation.get();
         } catch (IOException e) {
-            throw handleException(message, e);
+            throw toProviderException(message, e);
         }
     }
 
@@ -193,10 +197,46 @@ public final class GoogleTasksProvider implements TaskProvider {
         }
     }
 
-    private ProviderException handleException(String message, IOException e) {
+    /**
+     * Convierte la {@link IOException} de Google en una {@link ProviderException}.
+     * Package-private para poder testear la detección de credencial inválida sin red.
+     */
+    static ProviderException toProviderException(String message, IOException e) {
+        if (isInvalidGrant(e)) {
+            return new AuthenticationExpiredException(
+                    message + ": la sesión de Google expiró o fue revocada", e);
+        }
         if (e instanceof GoogleJsonResponseException ge && ge.getDetails() != null) {
             return new ProviderException(message + ": " + ge.getDetails().getMessage(), e);
         }
         return new ProviderException(message + ": " + e.getMessage(), e);
+    }
+
+    private static boolean isInvalidGrant(IOException e) {
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof TokenResponseException tre && isInvalidGrantError(tre.getDetails())) {
+                return true;
+            }
+            // Defensa: `invalid_grant` normalmente llega como `TokenResponseException` (endpoint
+            // de token). Se cubre además el caso JSON por si la API lo reporta como
+            // `GoogleJsonResponseException` con `errors[].reason == "invalid_grant"`.
+            if (cause instanceof GoogleJsonResponseException gre && containsInvalidGrantReason(gre.getDetails())) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
+    private static boolean isInvalidGrantError(TokenErrorResponse details) {
+        return details != null && "invalid_grant".equals(details.getError());
+    }
+
+    private static boolean containsInvalidGrantReason(GoogleJsonError details) {
+        if (details == null || details.getErrors() == null) {
+            return false;
+        }
+        return details.getErrors().stream().anyMatch(info -> "invalid_grant".equals(info.getReason()));
     }
 }
