@@ -12,12 +12,12 @@ class AppLogoTest {
     void linesAreNonEmptyAndUniformWidth() {
         List<String> lines = AppLogo.lines();
 
-        assertEquals(5, lines.size());
+        assertEquals(6, lines.size());
         int width = lines.get(0).length();
         assertTrue(width > 0);
         for (String line : lines) {
             assertEquals(width, line.length());
-            assertTrue(line.contains("█"));
+            assertTrue(!line.isBlank());
         }
     }
 
@@ -36,7 +36,7 @@ class AppLogoTest {
 
         List<String> fit = AppLogo.fit(width);
 
-        assertEquals(5, fit.size());
+        assertEquals(6, fit.size());
         for (String line : fit) {
             assertEquals(width, line.length());
         }

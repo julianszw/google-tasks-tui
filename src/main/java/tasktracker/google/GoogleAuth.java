@@ -116,6 +116,7 @@ public final class GoogleAuth implements AccountProvider {
     @Override
     public void signOut() {
         cachedEmail = null;
+        flow = null;
         Path dir = workingDir.resolve(DATA_STORE_DIR);
         if (!Files.exists(dir)) {
             return;
@@ -155,6 +156,7 @@ public final class GoogleAuth implements AccountProvider {
                 List.of(TasksScopes.TASKS, USERINFO_EMAIL_SCOPE))
                 .setDataStoreFactory(store)
                 .setAccessType("offline")
+                .setApprovalPrompt("force")
                 .build();
     }
 

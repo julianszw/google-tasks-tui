@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-slate-950" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaskMaster — Modern TUI Terminal</title>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&amp;display=swap" rel="stylesheet"/>
+<script data-purpose="tailwind-configuration">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'Fira Code', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            tui: {
+              bg: '#080d16',
+              surface: '#0d1524',
+              surfaceAlt: '#111b2e',
+              border: '#1e293b',
+              borderActive: '#06b6d4',
+              cyan: '#22d3ee',
+              teal: '#2dd4bf',
+              amber: '#fbbf24',
+              emerald: '#34d399',
+              muted: '#64748b',
+              dim: '#334155',
+            }
+          },
+          boxShadow: {
+            'terminal': '0 25px 65px -12px rgba(0, 0, 0, 0.85), 0 0 40px -10px rgba(6, 182, 212, 0.15)',
+            'glow-cyan': '0 0 15px -3px rgba(34, 211, 238, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-typography-and-scrollbars">
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    /* Terminal subtle scanline effect */
+    .crt-overlay {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+    }
+
+    /* Custom scrollbar for terminal feel */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d1524;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0891b2;
+    }
+  </style>
+<style data-purpose="powerline-arrow-styling">
+    /* Slanted Powerline arrows */
+    .pl-arrow-right::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: -10px;
+      width: 0;
+      height: 0;
+      border-top: 13px solid transparent;
+      border-bottom: 13px solid transparent;
+      border-left: 10px solid currentColor;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="h-full bg-[#050811] text-slate-200 antialiased p-3 sm:p-6 md:p-10 flex flex-col justify-center items-center overflow-x-hidden selection:bg-cyan-500 selection:text-black">
+<!-- BEGIN: TerminalWindowContainer -->
+<main class="w-full max-w-6xl bg-tui-bg border border-slate-800/90 rounded-xl shadow-terminal relative flex flex-col overflow-hidden backdrop-blur-md">
+<!-- CRT Overlay for subtle tactile retro-fidelity -->
+<div class="crt-overlay absolute inset-0 z-40 opacity-40"></div>
+<!-- BEGIN: TerminalTitleBar -->
+<!-- Window header with macOS-style controls and shell state -->
+<header class="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between select-none relative z-30">
+<!-- Window Action Dots -->
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-rose-500/80 border border-rose-600/40 inline-block hover:opacity-80 cursor-pointer"></span>
+<span class="w-3 h-3 rounded-full bg-amber-500/80 border border-amber-600/40 inline-block hover:opacity-80 cursor-pointer"></span>
+<span class="w-3 h-3 rounded-full bg-emerald-500/80 border border-emerald-600/40 inline-block hover:opacity-80 cursor-pointer"></span>
+<span class="text-xs text-slate-500 ml-2 font-semibold">taskmaster — zsh — 128x36</span>
+</div>
+<!-- Centered Shell Title -->
+<div class="hidden md:flex items-center gap-1.5 text-xs text-slate-400">
+<span class="text-cyan-400">⚡</span>
+<span class="text-slate-300 font-medium tracking-wide">session: work-main</span>
+<span class="text-slate-600">|</span>
+<span class="text-slate-400">pid: 48920</span>
+</div>
+<!-- Online Status Badge -->
+<div class="flex items-center gap-2">
+<span class="flex h-2 w-2 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+</span>
+<span class="text-[11px] font-medium text-emerald-400 tracking-wide">Online (Google Tasks)</span>
+</div>
+</header>
+<!-- END: TerminalTitleBar -->
+<!-- BEGIN: TerminalBody -->
+<div class="p-4 sm:p-6 flex flex-col gap-4 text-xs sm:text-sm">
+<!-- BEGIN: AsciiBannerAndNav -->
+<div class="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-800/80 pb-4 gap-4">
+<!-- Retro Pixel/Block Header Brand -->
+<div class="select-none leading-none">
+<pre class="font-mono text-cyan-400 text-[10px] sm:text-[13px] md:text-sm leading-[1.1] font-black tracking-widest drop-shadow-[0_0_12px_rgba(34,211,238,0.4)]">████████╗ █████╗ ███████╗██╗  ██╗███╗   ███╗ █████╗ ███████╗████████╗███████╗██████╗ 
+╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝████╗ ████║██╔══██╗██╔════╝╚══██╔══╝██╔════╝██╔══██╗
+   ██║   ███████║███████╗█████═╝ ██╔████╔██║███████║███████╗   ██║   █████╗  ██████╔╝
+   ██║   ██╔══██║╚════██║██╔═██╗ ██║╚██╔╝██║██╔══██║╚════██║   ██║   ██╔══╝  ██╔══██╗
+   ██║   ██║  ██║███████║██║ ╚██╗██║ ╚═╝ ██║██║  ██║███████║   ██║   ███████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝</pre>
+<div class="flex items-center gap-3 mt-1.5 text-[11px] text-slate-500">
+<span class="text-cyan-400/80 font-bold uppercase tracking-wider">TUI Workflow Engine</span>
+<span>•</span>
+<span>Vim keybindings enabled</span>
+<span>•</span>
+<span class="text-slate-400">UTF-8 / 24-bit TrueColor</span>
+</div>
+</div>
+<!-- Navigation Tabs / List Switcher -->
+<nav class="flex flex-wrap items-center gap-1.5" data-purpose="list-tabs">
+<button class="px-2.5 py-1 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-500/50 shadow-sm flex items-center gap-1.5 font-semibold text-xs tracking-tight">
+<span class="text-cyan-400">[1]</span> Trámites
+            <span class="px-1.5 py-0.2 rounded text-[10px] bg-cyan-400/20 text-cyan-200 border border-cyan-400/30">1/15</span>
+</button>
+<button class="px-2.5 py-1 rounded bg-slate-900/60 text-slate-400 hover:text-slate-200 border border-slate-800 transition flex items-center gap-1.5 text-xs">
+<span class="text-slate-600">[2]</span> Personal
+            <span class="text-[10px] text-slate-500">4</span>
+</button>
+<button class="px-2.5 py-1 rounded bg-slate-900/60 text-slate-400 hover:text-slate-200 border border-slate-800 transition flex items-center gap-1.5 text-xs">
+<span class="text-slate-600">[3]</span> Trabajo
+            <span class="text-[10px] text-slate-500">8</span>
+</button>
+<button class="px-2.5 py-1 rounded bg-slate-900/60 text-slate-500 hover:text-slate-400 border border-slate-800/60 transition flex items-center gap-1.5 text-xs">
+<span class="text-slate-700">[4]</span> Archivo
+          </button>
+</nav>
+</div>
+<!-- END: AsciiBannerAndNav -->
+<!-- BEGIN: MainPanelsSplit -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+<!-- LEFT PANEL: Task List (8 Cols) -->
+<section class="lg:col-span-7 xl:col-span-8 bg-slate-900/40 border border-slate-800 rounded-lg p-3 sm:p-4 flex flex-col justify-between min-h-[380px] relative">
+<!-- Box Header Line & Progress Bar -->
+<div>
+<div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5 mb-3">
+<div class="flex items-center gap-2">
+<span class="text-cyan-400 font-bold text-xs uppercase tracking-wider flex items-center gap-1">
+<span>┌─</span>
+<span>Trámites</span>
+<span class="text-slate-500 font-normal font-mono">(Google Tasks)</span>
+</span>
+<span class="text-slate-600">•</span>
+<span class="text-xs text-amber-400 font-mono">1/15 completadas</span>
+</div>
+<!-- TUI Progress Indicator -->
+<div class="flex items-center gap-2 text-xs font-mono">
+<span class="text-cyan-400 font-bold">[██░░░░░░░░]</span>
+<span class="text-slate-400 text-[11px]">7%</span>
+</div>
+</div>
+<!-- Task List Items matching source photo -->
+<ul class="space-y-1 font-mono text-[13px] sm:text-sm">
+<!-- Item 1: Selected / Cursor Active -->
+<li class="group bg-cyan-950/40 border-l-2 border-cyan-400 pl-2 pr-3 py-1.5 rounded-r flex items-center justify-between text-cyan-100 font-medium transition cursor-pointer">
+<div class="flex items-center gap-2.5 overflow-hidden">
+<span class="text-cyan-400 font-bold select-none text-base leading-none">▌</span>
+<span class="text-cyan-400 select-none">○</span>
+<span class="truncate font-semibold text-white group-hover:text-cyan-200">Psico para Dana</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="bg-amber-400/15 text-amber-300 border border-amber-400/30 text-[11px] px-1.5 py-0.5 rounded font-mono">
+                    2026-09-04
+                  </span>
+<span class="text-[10px] text-cyan-400 font-bold tracking-wider px-1 bg-cyan-400/10 rounded">ACTIVE</span>
+</div>
+</li>
+<!-- Item 2 -->
+<li class="pl-2 pr-3 py-1.5 rounded flex items-center justify-between hover:bg-slate-800/40 text-slate-300 transition cursor-pointer">
+<div class="flex items-center gap-2.5 overflow-hidden">
+<span class="text-transparent font-bold select-none text-base leading-none">▌</span>
+<span class="text-slate-500 select-none">○</span>
+<span class="truncate">Revisar Lowi pagos</span>
+</div>
+<span class="text-slate-600 text-xs hover:text-slate-400">#facturas</span>
+</li>
+<!-- Item 3 -->
+<li class="pl-2 pr-3 py-1.5 rounded flex items-center justify-between hover:bg-slate-800/40 text-slate-300 transition cursor-pointer">
+<div class="flex items-center gap-2.5 overflow-hidden">
+<span class="text-transparent font-bold select-none text-base leading-none">▌</span>
+<span class="text-slate-500 select-none">○</span>
+<span class="truncate">Revisar Seguridad Social</span>
+</div>
+<span class="text-slate-600 text-xs">#gob</span>
+</li>
+<!-- Item 4 -->
+<li class="pl-2 pr-3 py-1.5 rounded flex items-center justify-between hover:bg-slate-800/40 text-slate-300 transition cursor-pointer">
+<div class="flex items-center gap-2.5 overflow-hidden">
+<span class="text-transparent font-bold select-none text-base leading-none">▌</span>
+<span class="text-slate-500 select-none">○</span>
+<span class="truncate">Retirar título ORT - QR</span>
+</div>
+<span class="text-slate-600 text-xs">#estudios</span>
+</li>
+<!-- Item 5 -->
+<li class="pl-2 pr-3 py-1.5 rounded flex items-center justify-between hover:bg-slate-800/40 text-slate-300 transition cursor-pointer">
+<div class="flex items-center gap-2.5 overflow-hidden">
+<span class="text-transparent font-bold select-none text-base leading-none">▌</span>
+<span class="text-slate-500 select-none">○</span>
+<span class="truncate">Lowi - Cargar saldo en Santander y revisar estado</span>
+</div>
+<span class="text-slate-600 text-xs">#banco</span>
+</li>
+<!-- Item 6 -->
+<li class="pl-2 pr-3 py-1.5 rounded flex items-center justify-between hover:bg-slate-800/40 text-slate-300 transition cursor-pointer">
+<div class="flex items-center gap-2.5 overflow-hidden">
+<span class="text-transparent font-bold select-none text-base leading-none">▌</span>
+<span class="text-slate-500 select-none">○</span>
+<span class="truncate">Lemon</span>
+</div>
+<span class="text-slate-600 text-xs">#crypto</span>
+</li>
+<!-- Item 7 -->
+<li class="pl-2 pr-3 py-1.5 rounded flex items-center justify-between hover:bg-slate-800/40 text-slate-300 transition cursor-pointer">
+<div class="flex items-center gap-2.5 overflow-hidden">
+<span class="text-transparent font-bold select-none text-base leading-none">▌</span>
+<span class="text-slate-500 select-none">○</span>
+<span class="truncate">Retirar programa ORT</span>
+</div>
+<span class="text-slate-600 text-xs">#estudios</span>
+</li>
+<!-- Completed Section Divider -->
+<li class="pt-3 pb-1 px-2 flex items-center gap-2 select-none text-slate-600 text-xs">
+<span class="text-slate-700">─── Completadas recientemente ──────────────────────</span>
+</li>
+<!-- Completed Task Item from Image -->
+<li class="pl-2 pr-3 py-1.5 rounded flex items-center justify-between hover:bg-slate-800/30 text-slate-500 transition cursor-pointer">
+<div class="flex items-center gap-2.5 overflow-hidden line-through decoration-slate-600">
+<span class="text-transparent font-bold select-none text-base leading-none">▌</span>
+<span class="text-emerald-400 font-bold select-none">✓</span>
+<span class="truncate text-slate-400">Hermana de Feli: volver a avisar</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="text-slate-500 text-xs font-mono">2026-08-30</span>
+<span class="text-[10px] text-emerald-400 font-mono">DONE</span>
+</div>
+</li>
+</ul>
+</div>
+<!-- Bottom sub-legend for Left Panel -->
+<div class="mt-4 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500">
+<span class="font-mono">└─ [Filtro: Activas + Recientes]</span>
+<span>Mostrando 8 de 15 items</span>
+</div>
+</section>
+<!-- END: TaskList Panel -->
+<!-- RIGHT PANEL: Inspector / Detail Pane (4 Cols) -->
+<aside class="lg:col-span-5 xl:col-span-4 bg-slate-900/60 border border-cyan-500/30 rounded-lg p-4 flex flex-col justify-between shadow-[0_0_15px_rgba(6,182,212,0.08)] relative">
+<div class="space-y-4">
+<!-- Pane Header -->
+<div class="flex items-center justify-between border-b border-slate-800 pb-2">
+<div class="flex items-center gap-2">
+<span class="text-cyan-400 font-semibold text-xs tracking-wider uppercase flex items-center gap-1">
+<span>┌─</span>
+<span>Inspección de Tarea</span>
+</span>
+</div>
+<span class="text-[10px] bg-cyan-400/20 text-cyan-300 font-mono px-1.5 py-0.5 rounded border border-cyan-400/30">ID: #tsk_9402</span>
+</div>
+<!-- Task Main Title Info -->
+<div>
+<span class="text-[11px] font-medium text-slate-500 uppercase tracking-wider block mb-1">Título</span>
+<h3 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+<span>Psico para Dana</span>
+</h3>
+</div>
+<!-- Meta Grid -->
+<div class="grid grid-cols-2 gap-2.5 text-xs bg-slate-950/60 p-3 rounded border border-slate-800">
+<div>
+<span class="text-[10px] text-slate-500 uppercase block font-semibold">Lista Origen</span>
+<span class="text-cyan-300 font-medium">Trámites</span>
+</div>
+<div>
+<span class="text-[10px] text-slate-500 uppercase block font-semibold">Sincronización</span>
+<span class="text-slate-300 flex items-center gap-1">
+<span class="text-emerald-400 text-xs">●</span> Google Tasks
+                </span>
+</div>
+<div>
+<span class="text-[10px] text-slate-500 uppercase block font-semibold">Fecha Límite</span>
+<span class="text-amber-300 font-mono font-medium">2026-09-04</span>
+</div>
+<div>
+<span class="text-[10px] text-slate-500 uppercase block font-semibold">Prioridad</span>
+<span class="text-rose-400 font-medium flex items-center gap-1">
+<span>▲</span> Alta (P1)
+                </span>
+</div>
+</div>
+<!-- Description / Notes -->
+<div>
+<span class="text-[11px] font-medium text-slate-500 uppercase tracking-wider block mb-1">Notas y Recordatorio</span>
+<div class="bg-slate-950/40 p-2.5 rounded border border-slate-800 text-xs text-slate-300 leading-relaxed font-mono">
+                Pedir confirmación del horario con la secretaría antes del jueves. Llevar comprobante de derivación impreso o digital.
+              </div>
+</div>
+<!-- Tags -->
+<div>
+<span class="text-[11px] font-medium text-slate-500 uppercase tracking-wider block mb-1.5">Etiquetas</span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 text-xs border border-slate-700">#salud</span>
+<span class="px-2 py-0.5 rounded bg-slate-800 text-purple-300 text-xs border border-slate-700">#familia</span>
+<span class="px-2 py-0.5 rounded bg-slate-800 text-amber-300 text-xs border border-slate-700">#septiembre</span>
+</div>
+</div>
+</div>
+<!-- Inspector Contextual Quick Actions -->
+<div class="mt-5 pt-3 border-t border-slate-800 flex flex-col gap-2">
+<span class="text-[10px] text-slate-500 uppercase font-mono tracking-wider">Acciones Rápidas (Atajo)</span>
+<div class="grid grid-cols-2 gap-1.5 text-xs">
+<button class="bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded text-center border border-slate-700 transition">
+<kbd class="font-mono font-bold text-cyan-400">e</kbd> Editar
+              </button>
+<button class="bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 px-2 py-1 rounded text-center border border-emerald-700/50 transition">
+<kbd class="font-mono font-bold text-emerald-400">Space</kbd> Marcar hecha
+              </button>
+</div>
+<span class="text-[10px] text-slate-600 font-mono mt-1">└─ [Buffer: read-only inspector]</span>
+</div>
+</aside>
+<!-- END: Right Inspector Panel -->
+</div>
+<!-- END: MainPanelsSplit -->
+<!-- BEGIN: PowerlineStatusBar -->
+<!-- Modern segmented powerline status bar (vim / tmux style) -->
+<footer class="mt-2 flex flex-col gap-3">
+<!-- Segment Bar -->
+<div class="flex flex-wrap items-center bg-slate-900 border border-slate-800 rounded overflow-hidden text-xs font-mono shadow-inner">
+<!-- Segment 1: App Identifier -->
+<div class="bg-cyan-500 text-black px-3 py-1 font-extrabold flex items-center gap-1.5 select-none">
+<span>TASKMASTER</span>
+<span class="text-[10px] font-mono px-1 bg-black/20 rounded">v1.4.2</span>
+</div>
+<!-- Segment 2: Mode / Branch -->
+<div class="bg-cyan-900/60 text-cyan-200 px-3 py-1 font-semibold flex items-center gap-1 border-r border-slate-800">
+<span>NORMAL</span>
+</div>
+<!-- Segment 3: Active List Context -->
+<div class="bg-slate-800/70 text-slate-200 px-3 py-1 flex items-center gap-2 border-r border-slate-700/50">
+<span class="text-cyan-400">≡</span>
+<span>Trámites</span>
+</div>
+<!-- Segment 4: Counters from screenshot -->
+<div class="px-3 py-1 text-slate-300 flex items-center gap-2 flex-grow">
+<span class="text-amber-400 font-medium">7 pendientes</span>
+<span class="text-slate-600">•</span>
+<span class="text-emerald-400 font-medium">1 completada</span>
+</div>
+<!-- Segment 5: Sync Timestamp -->
+<div class="bg-slate-950 px-3 py-1 text-slate-400 border-l border-slate-800 flex items-center gap-1.5 text-[11px]">
+<span class="text-emerald-400">↻</span>
+<span>Sync: Hace 2m</span>
+</div>
+</div>
+<!-- Keyboard Keybinding Tray with tactile pill badges -->
+<div class="bg-slate-950/80 border border-slate-800/80 rounded-lg p-2.5 flex flex-wrap items-center justify-between gap-y-2 text-xs text-slate-400">
+<div class="flex flex-wrap items-center gap-2 sm:gap-3">
+<div class="flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">↑/k</kbd>
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">↓/j</kbd>
+<span class="text-slate-500 ml-0.5">navegar</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="px-2 py-0.5 rounded bg-slate-800 text-slate-200 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">Enter</kbd>
+<span class="text-slate-500 ml-0.5">detalles</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="px-2 py-0.5 rounded bg-slate-800 text-slate-200 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">Tab</kbd>
+<span class="text-slate-500 ml-0.5">panel</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">a</kbd>
+<span class="text-slate-500 ml-0.5">nueva</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">e</kbd>
+<span class="text-slate-500 ml-0.5">editar</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">s</kbd>
+<span class="text-slate-500 ml-0.5">ordenar</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-300 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">d</kbd>
+<span class="text-slate-500 ml-0.5">hecha</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">p</kbd>
+<span class="text-slate-500 ml-0.5">prioridad</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-rose-400 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">x</kbd>
+<span class="text-slate-500 ml-0.5">eliminar</span>
+</div>
+</div>
+<!-- Quit command indicator -->
+<div class="flex items-center gap-1 shrink-0 ml-auto pt-1 sm:pt-0">
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-rose-300 font-mono font-bold border border-slate-700 shadow-sm text-[11px]">q / Esc</kbd>
+<span class="text-slate-500 ml-0.5">salir</span>
+</div>
+</div>
+</footer>
+<!-- END: PowerlineStatusBar -->
+</div>
+<!-- END: TerminalBody -->
+</main>
+<!-- END: TerminalWindowContainer -->
+</body></html>

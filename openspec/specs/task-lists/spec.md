@@ -142,3 +142,17 @@ El sistema DEBE permitir eliminar todas las listas que no tienen tareas.
 - **WHEN** se muestra la vista
 - **THEN** la vista se muestra sin listas ni tareas
 - **AND** el usuario puede crear una lista nueva (según esta capacidad)
+
+#### Scenario: Una lista no se puede eliminar
+- **GIVEN** listas vacías, de las cuales una no es eliminable (por ejemplo, la lista
+  por defecto de Google Tasks)
+- **WHEN** se solicita eliminar las listas vacías
+- **THEN** se eliminan las listas que sí se pueden eliminar
+- **AND** la lista no eliminable permanece
+- **AND** se continúa con las siguientes listas vacías sin detenerse
+
+#### Scenario: Error descriptivo
+- **GIVEN** el fallo al eliminar una lista
+- **WHEN** se informa el resultado
+- **THEN** el mensaje indica qué lista no se pudo eliminar
+- **AND** no muestra un mensaje genérico o ilegible (por ejemplo, "Invalid True")

@@ -21,13 +21,15 @@ La tecla `Enter` DEBE abrir un menú contextual de acciones para la tarea selecc
 - **AND** no se produce ningún error
 
 ### Requirement: Acciones disponibles del menú
-El menú DEBE listar las acciones de la tarea seleccionada — completar, reabrir, eliminar, editar, fecha y mover — en un orden estable y consistente.
+El menú DEBE listar las acciones de la tarea seleccionada — completar, reabrir,
+eliminar, editar, fecha y mover — en orden alfabético (según `menu-ordering`) y cada
+una con su atajo en gris (según `menu-shortcuts`).
 
 #### Scenario: Lista de acciones
 - **GIVEN** el menú de acciones abierto
 - **WHEN** se muestra el menú
-- **THEN** se listan las acciones completar, reabrir, eliminar, editar, fecha y mover
-- **AND** el orden de las acciones es el mismo en cada apertura
+- **THEN** se listan las acciones completar, editar, eliminar, fecha, mover y reabrir (orden alfabético)
+- **AND** cada acción muestra su atajo en gris (según `menu-shortcuts`)
 
 #### Scenario: Completar desde el menú
 - **GIVEN** el menú abierto con la acción "completar" seleccionada
@@ -86,20 +88,27 @@ La tecla `Esc` DEBE cerrar el menú sin ejecutar ninguna acción, devolviendo el
 - **AND** no se ejecuta ninguna acción
 - **AND** la lista de tareas vuelve a estar activa
 
-### Requirement: Deshabilitar atajos mientras el menú está abierto
-Mientras el menú de acciones está abierto, los atajos de teclado de la lista (`a`, `c`, `r`, `d`, `p`, `q`) DEBEN quedar deshabilitados; la interacción se realiza únicamente con las teclas del menú.
+### Requirement: Atajos activos y deshabilitados con el menú abierto
+Mientras el menú de acciones está abierto, los atajos del menú (`c`, `r`, `d`, `e`,
+`f`, `m` — según `menu-shortcuts`) ejecutan las acciones del menú, y los atajos de la
+vista (`a`, `n`, `s`, `x`, `p`, `q`) DEBEN quedar deshabilitados.
 
-#### Scenario: Atajo deshabilitado con el menú abierto
+#### Scenario: Atajo del menú activo
 - **GIVEN** el menú de acciones abierto
-- **WHEN** el usuario presiona un atajo de la lista (por ejemplo, `c` o `q`)
-- **THEN** no se ejecuta la acción asociada al atajo
+- **WHEN** el usuario presiona un atajo del menú (por ejemplo, `c` o `e`)
+- **THEN** se ejecuta la acción correspondiente del menú
+
+#### Scenario: Atajo de la vista deshabilitado
+- **GIVEN** el menú de acciones abierto
+- **WHEN** el usuario presiona un atajo de la vista (por ejemplo, `p` o `q`)
+- **THEN** no se ejecuta la acción asociada al atajo de la vista
 - **AND** no se cierra la aplicación
 - **AND** el menú permanece abierto
 
 #### Scenario: Atajos restaurados al cerrar el menú
 - **GIVEN** el menú de acciones abierto
 - **WHEN** el usuario lo cierra con `Esc` o ejecutando una acción
-- **THEN** los atajos de teclado de la lista vuelven a estar habilitados
+- **THEN** los atajos de teclado de la vista vuelven a estar habilitados
 
 ### Requirement: Editar tarea desde el menú
 La acción "editar" DEBE abrir un campo de entrada precargado con el título actual para modificar la tarea seleccionada.

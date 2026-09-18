@@ -7,7 +7,9 @@ if [ -f ".env" ]; then
 fi
 
 JAR="target/cli-task-tracker-1.0.0.jar"
-if [ ! -f "$JAR" ]; then
+# Recompila si el jar no existe o si hay cambios sin empaquetar
+# (algún archivo bajo src/ o pom.xml es más reciente que el jar).
+if [ ! -f "$JAR" ] || [ -n "$(find src pom.xml -newer "$JAR" -print -quit)" ]; then
   echo "==> Compilando..."
   mvn package -q -DskipTests
 fi
