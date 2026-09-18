@@ -13,7 +13,6 @@ final class TaskViewRenderer implements ComponentRenderer<TaskViewComponent> {
     private static final String NO_TASKS = "No hay tareas cargadas";
 
     private static final int STATUS_BAR_HEIGHT = 4;
-    private static final int TABS_HEIGHT = 2;
     private static final int MIN_WIDE_WIDTH = 80;
 
     private static final char BOX_H = '─';
@@ -59,16 +58,23 @@ final class TaskViewRenderer implements ComponentRenderer<TaskViewComponent> {
         g.setForegroundColor(VisualStyle.FOREGROUND);
         g.fill(' ');
 
-        if (rows <= STATUS_BAR_HEIGHT + TABS_HEIGHT) {
+        int headerHeight = headerHeight(component, cols);
+        if (rows <= headerHeight + STATUS_BAR_HEIGHT) {
+            drawTabs(g, component, cols);
             return;
         }
 
-        int contentTop = TABS_HEIGHT;
-        int contentHeight = rows - TABS_HEIGHT - STATUS_BAR_HEIGHT;
+        int contentTop = headerHeight;
+        int contentHeight = rows - headerHeight - STATUS_BAR_HEIGHT;
 
         drawTabs(g, component, cols);
         drawContent(g, component, cols, contentTop, contentHeight);
         drawStatusBar(g, component, cols, rows - STATUS_BAR_HEIGHT);
+    }
+
+    private static int headerHeight(TaskViewComponent component, int cols) {
+        List<String> logo = component.zoom() >= 0 ? AppLogo.fit(cols) : List.of();
+        return logo.size() + 1; // logo rows + tabs row
     }
 
     // ── Tabs / List Switcher ──
