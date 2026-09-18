@@ -8,7 +8,9 @@ cada commit.
 
 ## Pendientes de commit
 
-_(ninguno)_
+| Change | Resumen |
+|--------|---------|
+| `039-fix-insufficient-scopes-reauth` | detectar `insufficientAuthenticationScopes` y re-autenticar automáticamente |
 
 ## Commiteados
 

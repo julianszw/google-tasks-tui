@@ -202,7 +202,7 @@ public final class GoogleTasksProvider implements TaskProvider {
      * Package-private para poder testear la detección de credencial inválida sin red.
      */
     static ProviderException toProviderException(String message, IOException e) {
-        if (isInvalidGrant(e)) {
+        if (isInvalidGrant(e) || isInsufficientScopes(e)) {
             return new AuthenticationExpiredException(
                     message + ": la sesión de Google expiró o fue revocada", e);
         }
@@ -238,5 +238,19 @@ public final class GoogleTasksProvider implements TaskProvider {
             return false;
         }
         return details.getErrors().stream().anyMatch(info -> "invalid_grant".equals(info.getReason()));
+    }
+
+    private static boolean isInsufficientScopes(IOException e) {
+        if (!(e instanceof GoogleJsonResponseException ge) || ge.getDetails() == null) {
+            return false;
+        }
+        if (ge.getDetails().getCode() == 403
+                && ge.getDetails().getErrors() != null
+                && ge.getDetails().getErrors().stream()
+                        .anyMatch(info -> "insufficientAuthenticationScopes".equals(info.getReason()))) {
+            return true;
+        }
+        return ge.getDetails().getMessage() != null
+                && ge.getDetails().getMessage().contains("insufficient authentication scopes");
     }
 }
