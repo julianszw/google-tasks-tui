@@ -140,6 +140,14 @@ eliminar.
 - **THEN** la lista se elimina en Google Tasks
 - **AND** deja de estar disponible para ser listada
 
+#### Scenario: Error al eliminar una lista
+- **GIVEN** una lista que Google Tasks no permite eliminar (por ejemplo, la lista por
+  defecto)
+- **WHEN** se solicita eliminar la lista
+- **THEN** el sistema informa del error de forma descriptiva, indicando qué lista no
+  se pudo eliminar
+- **AND** no muestra un mensaje genérico o ilegible (por ejemplo, "Invalid True")
+
 ### Requirement: Operaciones sobre tareas
 El sistema DEBE soportar, sobre las tareas de una lista, listar, crear, actualizar,
 eliminar y mover.

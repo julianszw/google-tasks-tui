@@ -6,7 +6,10 @@ Define la sección de ajustes de la aplicación: una pantalla que se abre con la
 y que permite alternar los ajustes "ocultar listas vacías" (según `hide-empty-lists`)
 y "ocultar tareas completadas" (según `hide-completed-tasks`), configurar y consultar
 la cuenta de Google (según `task-provider`) y ver la opción de tema (claro/oscuro)
-como marcador de posición (según `theme`). Los ajustes se conservan entre sesiones.
+como marcador de posición (según `theme`). Los items se ordenan alfabéticamente
+(según `menu-ordering`), se navegan con `Tab`/`Shift+Tab` y flechas, la opción
+seleccionada se marca con `<`/`>`, y cada opción tiene su atajo (según
+`menu-shortcuts`). Los cambios quedan pendientes y se guardan o descartan al salir.
 
 ## Requirements
 
@@ -34,14 +37,13 @@ La sección de Settings DEBE identificarse visualmente con un ícono de engranaj
   equivalente en caracteres) junto al título de la sección
 
 ### Requirement: Ajustes disponibles
-La sección DEBE listar, en orden estable, los items: "ocultar listas vacías",
-"ocultar tareas completadas", "cuenta" y "tema".
+La sección DEBE listar, en orden alfabético (según `menu-ordering`), los items:
+"cuenta", "ocultar listas vacías", "ocultar tareas completadas" y "tema".
 
 #### Scenario: Lista de ajustes
 - **GIVEN** la sección de Settings abierta
 - **WHEN** se muestra la sección
-- **THEN** se listan los items "ocultar listas vacías", "ocultar tareas completadas", "cuenta" y "tema"
-- **AND** el orden de los items es el mismo en cada apertura
+- **THEN** se listan los items "cuenta", "ocultar listas vacías", "ocultar tareas completadas" y "tema" en orden alfabético
 
 #### Scenario: Estado de los toggles
 - **GIVEN** la sección de Settings abierta
@@ -49,32 +51,49 @@ La sección DEBE listar, en orden estable, los items: "ocultar listas vacías",
 - **THEN** cada uno muestra si está activado o desactivado
 
 ### Requirement: Navegación entre ajustes
-El sistema DEBE permitir moverse entre los ajustes con las teclas `↑`/`k` (arriba) y
-`↓`/`j` (abajo), de forma cíclica, resaltando el ajuste seleccionado.
+El sistema DEBE permitir moverse entre los ajustes con `Tab`/`Shift+Tab` (siguiente /
+anterior) y con las teclas `↑`/`k` (arriba) y `↓`/`j` (abajo), de forma cíclica,
+resaltando el ajuste seleccionado.
 
 #### Scenario: Mover selección
 - **GIVEN** la sección de Settings abierta
-- **WHEN** el usuario presiona `↓` o `j`
+- **WHEN** el usuario presiona `Tab`, `↓` o `j`
 - **THEN** la selección se mueve al siguiente ajuste
 - **AND** el ajuste seleccionado se resalta visualmente
 
+#### Scenario: Retroceder selección
+- **GIVEN** la sección de Settings abierta
+- **WHEN** el usuario presiona `Shift+Tab`, `↑` o `k`
+- **THEN** la selección se mueve al ajuste anterior
+
 #### Scenario: Ciclo en los extremos
 - **GIVEN** la selección en el último ajuste
-- **WHEN** el usuario presiona `↓` o `j`
+- **WHEN** el usuario presiona `Tab`, `↓` o `j`
 - **THEN** la selección vuelve al primer ajuste
-- **AND** al presionar `↑` o `k` desde el primer ajuste, la selección vuelve al último
+- **AND** al presionar `Shift+Tab`, `↑` o `k` desde el primer ajuste, la selección vuelve al último
+
+### Requirement: Marcador de la opción seleccionada
+La opción seleccionada DEBE mostrarse delimitada por flechas que apuntan hacia
+afuera (`<` y `>`); para los toggles, el valor actual se muestra entre `<` y `>`
+(por ejemplo, `<Sí>` o `<No>`).
+
+#### Scenario: Marcador visible
+- **GIVEN** la sección de Settings abierta
+- **WHEN** se muestra la opción seleccionada
+- **THEN** la opción seleccionada se muestra entre `<` y `>`
+- **AND** para los toggles, el valor actual se muestra entre `<` y `>` (por ejemplo, `<Sí>` o `<No>`)
 
 ### Requirement: Alternar un ajuste
 La tecla `Enter` DEBE alternar los ajustes de tipo toggle ("ocultar listas vacías" y
-"ocultar tareas completadas") entre activado y desactivado.
+"ocultar tareas completadas") entre activado y desactivado. El cambio queda pendiente
+hasta confirmar la salida.
 
 #### Scenario: Alternar ajuste
 - **GIVEN** la sección de Settings abierta con un toggle seleccionado
 - **WHEN** el usuario presiona `Enter`
 - **THEN** el toggle cambia de estado (activado ↔ desactivado)
 - **AND** la sección se redibuja mostrando el nuevo estado
-- **AND** el cambio se refleja en la vista de tareas (según `hide-empty-lists` y
-  `hide-completed-tasks`)
+- **AND** el cambio queda pendiente (aún no se persiste)
 
 ### Requirement: Mostrar estado de la cuenta
 La sección DEBE mostrar el estado de la cuenta de Google: "configurar cuenta" si no
@@ -141,17 +160,36 @@ El comportamiento real se define en la capacidad `theme`.
 
 ### Requirement: Cerrar Settings
 La tecla `Esc` DEBE cerrar la sección de Settings y devolver el foco a la vista de
-tareas sin cambios adicionales.
+tareas.
 
-#### Scenario: Cerrar con Esc
-- **GIVEN** la sección de Settings abierta
+#### Scenario: Cerrar sin cambios
+- **GIVEN** la sección de Settings abierta sin cambios pendientes
 - **WHEN** el usuario presiona `Esc`
 - **THEN** la sección se cierra
 - **AND** la vista de tareas vuelve a estar activa
 
+### Requirement: Confirmar guardado al salir con cambios
+Si se modificó algún ajuste, al salir con `Esc` el sistema DEBE pedir confirmación
+"¿Guardar cambios?" con opciones "Sí"/"No": "Sí" guarda y aplica los cambios, "No"
+los descarta.
+
+#### Scenario: Guardar cambios
+- **GIVEN** la sección de Settings abierta con cambios pendientes
+- **WHEN** el usuario presiona `Esc` y elige "Sí"
+- **THEN** los cambios se persisten
+- **AND** la sección se cierra
+- **AND** la vista de tareas refleja los nuevos ajustes
+
+#### Scenario: Descartar cambios
+- **GIVEN** la sección de Settings abierta con cambios pendientes
+- **WHEN** el usuario presiona `Esc` y elige "No"
+- **THEN** los cambios se descartan
+- **AND** la sección se cierra
+- **AND** la vista de tareas conserva los ajustes anteriores
+
 ### Requirement: Persistencia entre sesiones
-Los ajustes DEBEN conservarse entre sesiones: al reiniciar la aplicación se
-recuperan los valores elegidos previamente.
+Los ajustes confirmados DEBEN conservarse entre sesiones: al reiniciar la aplicación
+se recuperan los valores guardados previamente.
 
 #### Scenario: Recuperar ajustes
 - **GIVEN** un ajuste activado en una sesión anterior
