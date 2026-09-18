@@ -8,14 +8,13 @@ cada commit.
 
 ## Pendientes de commit
 
-| Change | Resumen |
-|--------|---------|
-| `039-fix-insufficient-scopes-reauth` | detectar `insufficientAuthenticationScopes` y re-autenticar automáticamente |
+_(ninguno)_
 
 ## Commiteados
 
 | Change | Commit (SHA) | Resumen |
 |--------|--------------|---------|
+| `039-fix-insufficient-scopes-reauth` | `1f38c5f` | detectar `insufficientAuthenticationScopes` y re-autenticar automáticamente |
 | `001-implement-task-management-and-cli` | `58c144d` | implementar task-management y cli-interface |
 | `002-purge-completed-tasks` | `efd7486` | agregar comando purge |
 | `003-pretty-output-formatting` | `996fc9f` | formatear salida en tabla con color y tachado |
